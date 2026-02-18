@@ -5,10 +5,11 @@ This file demonstrates how to use the page objects in your Playwright tests.
 """
 
 from playwright.sync_api import Page
-from .home_page import HomePage
-from .login_page import LoginPage
-from .register_page import RegisterPage
-from .checkout_page import CheckoutPage
+
+from page_objects.checkout_page import CheckoutPage
+from page_objects.home_page import HomePage
+from page_objects.login_page import LoginPage
+from page_objects.register_page import RegisterPage
 
 
 def example_basic_navigation(page: Page):

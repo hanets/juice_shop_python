@@ -1,6 +1,8 @@
 from typing import overload
-from playwright.sync_api import Page, Locator, expect
-from .login_page import LoginPage
+
+from playwright.sync_api import Page, expect
+
+from page_objects.login_page import LoginPage
 
 
 class HomePage:
@@ -114,10 +116,12 @@ class HomePage:
         expect(self.product_cards).to_have_count(expected_count)
 
     @overload
-    def verify_basket_items_count_sync(self, expected_count: int): ...
+    def verify_basket_items_count_sync(self, expected_count: int):
+        ...
 
     @overload
-    def verify_basket_items_count_sync(self, expected_count: str): ...
+    def verify_basket_items_count_sync(self, expected_count: str):
+        ...
 
     def verify_basket_items_count_sync(self, expected_count):
         basket_root = self.page.locator(".mdc-button__label", has_text="Your Basket")

@@ -1,5 +1,6 @@
 from playwright.sync_api import Page, expect
-from .home_page import HomePage
+
+from page_objects.home_page import HomePage
 
 
 def test_juice_shop_title(page: Page):

@@ -1,5 +1,6 @@
-from playwright.sync_api import Page, Locator, expect
 import time
+
+from playwright.sync_api import Page
 
 
 class RegisterPage:
