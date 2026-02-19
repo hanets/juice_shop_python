@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 from playwright.sync_api import APIRequestContext, Page, Playwright, expect
 
-from page_objects.checkout_page import CheckoutPage
-from page_objects.home_page import HomePage
-from page_objects.login_page import LoginPage
-from page_objects.register_page import RegisterPage
+from page_objects import CheckoutPage
+from page_objects import HomePage
+from page_objects import LoginPage
+from page_objects import RegisterPage
 
 
 def load_checkout_items():

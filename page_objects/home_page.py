@@ -2,7 +2,7 @@ from typing import overload
 
 from playwright.sync_api import Page, expect
 
-from page_objects.login_page import LoginPage
+from .login_page import LoginPage
 
 
 class HomePage:
