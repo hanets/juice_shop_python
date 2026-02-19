@@ -12,144 +12,79 @@ This project contains Python Playwright automation tests for the OWASP Juice Sho
 │   ├── register_page.py           # RegisterPage page object
 │   ├── checkout_page.py           # CheckoutPage page object
 │   ├── test_example.py            # Basic functionality tests
-│   ├── test_checkout.py           # Checkout flow tests
-│   ├── page_objects_examples.py   # Usage examples
-├── requirements.txt               # Python dependencies
-└── README.md                      # This file
-```
+# Juice Shop Python — Playwright tests
 
-## Page Objects
+Lightweight Playwright-based Python tests for the OWASP Juice Shop demo application. Tests follow a Page Object Model (POM) pattern and live in `page_objects/` and `tests/`.
 
-### HomePage (`home_page.py`)
-Converted from the TypeScript HomePage class, provides methods for:
-- Navigation and basic page interactions
-- Popup/cookie dismissal
-- User authentication verification
-- Product management (adding to basket, counting products)
-- Navigation to other pages (login, basket, sidenav)
+## Quickstart
 
-**Key Methods:**
-- `navigate_sync(url)` - Navigate to a URL
-- `dismiss_popup_and_cookies_sync()` - Dismiss welcome banner and cookies
-- `open_login_page_sync()` - Open login page via account menu
-- `add_product_to_basket_sync(product_name)` - Add product to basket
-- `verify_logged_in_sync()` / `verify_user_not_logged_in_sync()` - Check auth status
-- `get_visible_products_count_sync()` - Count visible products
-- Both sync (`_sync`) and async versions available
+1. Create and activate a virtual environment:
 
-### LoginPage (`login_page.py`)
-Handles user login functionality:
-- Email/password input
-- Login button interaction
-- Navigation to registration
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
 
-### RegisterPage (`register_page.py`)
-Handles user registration:
-- Unique email generation
-- Form completion with security questions
-- Registration submission
-
-### CheckoutPage (`checkout_page.py`) 
-Manages checkout process:
-- Checkout initiation
-- Address addition with form fields
-- Payment flow navigation
-
-## Setup
-
-1. Create a virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
 2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Install browsers:
-   ```bash
-   playwright install
-   ```
 
-## Usage Examples
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### Basic Navigation
-```python
-from tests.home_page import HomePage
+3. Install Playwright browsers:
 
-def test_basic_navigation(page: Page):
-    home_page = HomePage(page)
-    home_page.navigate_sync("http://localhost:3000/#/")
-    home_page.dismiss_popup_and_cookies_sync()
-    
-    products_count = home_page.get_visible_products_count_sync()
-    assert products_count > 0
+    ```bash
+    playwright install
+    ```
+
+4. Run tests:
+
+    ```bash
+    # Run all tests
+    python -m pytest -v
+
+    # Run a single test
+    python -m pytest tests/test_example.py::test_juice_shop_title -v
+    ```
+
+## Project layout
+
+```
+.
+├── page_objects/          # Page object classes (HomePage, LoginPage, etc.)
+├── tests/                 # pytest test modules
+├── requirements.txt       # Python dependencies
+└── README.md              # This file
 ```
 
-### User Registration & Login
-```python
-def test_user_flow(page: Page):
-    home_page = HomePage(page)
-    home_page.navigate_sync("http://localhost:3000/#/")
-    home_page.dismiss_popup_and_cookies_sync()
-    
-    # Register user
-    login_page = home_page.open_login_page_sync()
-    login_page.register_link.click()
-    
-    register_page = RegisterPage(page)
-    email = register_page.register_user_sync()
-    
-    # Login
-    login_page.email_field.fill(email)
-    login_page.password_field.fill("123456")
-    login_page.login_button.click()
-    
-    home_page.verify_logged_in_sync()
-```
+## Notes on tests and page objects
 
-### Shopping Flow
-```python
-def test_shopping(page: Page):
-    # ... login code ...
-    
-    home_page.add_product_to_basket_sync("Apple Juice (1000ml)")
-    home_page.verify_basket_items_count_sync(1)
-    home_page.open_basket_sync()
-    
-    checkout_page = CheckoutPage(page)
-    checkout_page.checkout_sync()
-    checkout_page.add_address_sync()
-    checkout_page.proceed_to_payment_sync()
-```
+- Page object classes live under `page_objects/` and are imported by tests in `tests/`.
+- Tests are written for pytest with Playwright fixtures (see `pytest-playwright`).
+- Many page object methods use both synchronous and asynchronous variants — follow existing patterns when adding new helpers.
 
-## Running Tests
+## Development tips
 
-```bash
-# Run specific test
-python -m pytest tests/test_example.py::test_juice_shop_title -v
+- Use the project's virtualenv: `source .venv/bin/activate`.
+- When adding tests, keep them deterministic and idempotent — create unique test users where required.
+- Run Playwright in headed mode for debugging: `pytest --headed`.
 
-# Run all tests
-python -m pytest tests/ -v
+## Contributing
 
-# Run tests with specific browser
-python -m pytest tests/ --browser chromium -v
+If you add features or refactor page objects, please:
 
-# Run with headed browser (visible)
-python -m pytest --headed
-```
-
-## Key Features
-
-1. **Page Object Model**: Clean separation of page logic and test logic
-2. **Sync/Async Support**: Both synchronous and asynchronous method versions
-3. **Reusable Components**: Common flows abstracted into reusable methods
-4. **TypeScript Conversion**: Faithful Python conversion of TypeScript Playwright code
-5. **Comprehensive Coverage**: Registration, login, shopping, and checkout flows
+1. Keep public method names stable where possible.
+2. Add or update tests that exercise the new behavior.
+3. Run `python -m pytest -v` before creating a PR.
 
 ## Dependencies
 
-- `pytest-playwright` - Playwright testing framework for Python
-- `playwright` - Browser automation library
+- `playwright`
+- `pytest-playwright`
 
-Install with: `pip install -r requirements.txt`
+Install with `pip install -r requirements.txt`.
+
+---
+
+If something in this README is unclear or you want a different format (shorter, more examples, or CI instructions), tell me what to add.
+```python
