@@ -101,6 +101,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: allure-history
+          force_orphan: true # creates branch from scratch if it doesn't exist
+          enable_jekyll: false # serve Allure HTML as-is, no Jekyll processing
 
       # ── Fail the build if tests failed ────────────────────────────────────────
       - name: Assert tests passed
