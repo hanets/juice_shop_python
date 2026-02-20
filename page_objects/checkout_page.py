@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+import allure
 
 
 class CheckoutPage:
@@ -18,9 +19,11 @@ class CheckoutPage:
             "button", name="Proceed to payment selection"
         )
 
+    @allure.step
     def checkout(self):
         self.__checkout_button.click()
 
+    @allure.step
     def add_address(
         self,
         country: str = "dsdsds",
@@ -43,5 +46,6 @@ class CheckoutPage:
         self.page.locator("div").filter(has_text="Add New").first.click()
         self.submit_address_button.click()
 
+    @allure.step
     def proceed_to_payment(self):
         self.proceed_to_payment_button.click()

@@ -1,6 +1,7 @@
 import time
 
 from playwright.sync_api import Page
+import allure
 
 
 class RegisterPage:
@@ -19,9 +20,11 @@ class RegisterPage:
         )
         self.register_button = page.get_by_role("button", name="Button to complete the")
 
+    @allure.step
     def generate_unique_email(self):
         return f"test{int(time.time())}@test.tt"
 
+    @allure.step
     def register_user(
         self, password: str = "123456", security_answer: str = "test"
     ):

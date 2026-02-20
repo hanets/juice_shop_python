@@ -1,4 +1,5 @@
 from playwright.sync_api import Page, expect
+import allure
 
 from .login_page import LoginPage
 
@@ -21,42 +22,52 @@ class HomePage:
         self.contact_us_link = page.get_by_role("link", name="contact us page")
         self.about_us_link = page.get_by_role("link", name="about us")
 
+    @allure.step
     def navigate(self, url: str):
         self.page.goto(url)
 
+    @allure.step
     def go_to_home_page(self):
         self.home_button.click()
 
+    @allure.step
     def dismiss_popup_and_cookies(self):
         self.page.get_by_role("button", name="Close Welcome Banner").click()
         self.page.get_by_role("button", name="dismiss cookie message").click()
 
+    @allure.step
     def open_login_page(self) -> LoginPage:
         self.page.get_by_role("button", name="Show/hide account menu").click()
         self.page.get_by_role("menuitem", name="Go to login page").click()
         return LoginPage(self.page)
 
+    @allure.step
     def verify_user_logged_in(self):
         expect(self.basket_link).to_be_visible()
         self.account_menu.click()
         expect(self.page.get_by_role("menuitem", name="Logout")).to_be_visible()
         self.page.keyboard.press("Escape")
 
+    @allure.step
     def verify_user_not_logged_in(self):
         expect(self.basket_link).to_be_hidden()
 
+    @allure.step
     def get_visible_products_count(self) -> int:
         return self.product_cards.count()
 
+    @allure.step
     def verify_visible_products_count(self, expected_count: int):
         expect(self.product_cards).to_have_count(expected_count)
 
+    @allure.step
     def verify_basket_items_count(self, expected_count: int | str):
         basket_root = self.page.locator(".mdc-button__label", has_text="Your Basket")
         expect(basket_root.locator(".warn-notification")).to_have_text(
             expected_count if isinstance(expected_count, str) else str(expected_count)
         )
 
+    @allure.step
     def add_product_to_basket(self, product_name: str):
         product_card = self.page.locator("mat-card").filter(has_text=product_name)
         product_card.get_by_label("Add to Basket").click()
@@ -64,20 +75,24 @@ class HomePage:
             self.page.get_by_text(f"Placed {product_name} into basket.")
         ).to_be_visible()
 
+    @allure.step
     def open_basket(self):
         self.page.get_by_role("button", name="Show the shopping cart").click()
 
+    @allure.step
     def verify_logged_in(self):
         expect(
             self.page.get_by_role("button", name="Show the shopping cart")
         ).to_be_visible()
         expect(self.page.get_by_text("Your Basket")).to_be_visible()
 
+    @allure.step
     def navigate_to_feedback(self):
         """Navigate to the feedback page from the sidenav"""
         self.sidenav_toggle.click()
         self.contact_us_link.click()
 
+    @allure.step
     def navigate_to_about_us(self):
         """Navigate to About Us page from the sidenav"""
         self.sidenav_toggle.click()
