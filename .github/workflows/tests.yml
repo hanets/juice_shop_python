@@ -6,10 +6,40 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      grep:
+        description: "Grep pattern for tests (file name or test name)"
+        required: false
+        type: string
+      browser:
+        description: "Browser to run tests with"
+        required: true
+        default: "chromium"
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+      failure-threshold:
+        description: "Max allowed failed tests"
+        required: false
+        default: "0"
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment; do NOT cancel in-progress runs.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   test:
     name: Run Tests
+    timeout-minutes: 60
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +61,7 @@ jobs:
 
       # ── Playwright browsers ──────────────────────────────────────────────────
       - name: Install Playwright browsers
-        run: playwright install --with-deps chromium
+        run: playwright install --with-deps ${{ inputs.browser || 'chromium' }}
 
       # ── Juice Shop (target app) ──────────────────────────────────────────────
       - name: Start Juice Shop
@@ -40,42 +70,93 @@ jobs:
             --name juice-shop \
             -p 3000:3000 \
             bkimminich/juice-shop:latest
-          # Wait until the app is ready
           timeout 120 bash -c 'until curl -sf http://localhost:3000; do sleep 2; done'
 
       # ── Run tests ────────────────────────────────────────────────────────────
       - name: Run pytest
         id: pytest
+        continue-on-error: true
         env:
           JUICE_SHOP_BASE_URL: "http://localhost:3000"
         run: |
-          set +e
-          pytest \
+          ARGS=""
+          if [ -n "${{ inputs.grep }}" ]; then
+            ARGS="$ARGS -k \"${{ inputs.grep }}\""
+          fi
+          echo "Running with args: $ARGS"
+          eval pytest \
             --html=report.html \
             --self-contained-html \
             --alluredir=allure-results \
-            -v
+            -v \
+            $ARGS
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-        continue-on-error: true # let later steps (reports) always run
 
-      # ── Upload reports ───────────────────────────────────────────────────────
-      - name: Upload HTML report
+      # ── Check failure threshold ──────────────────────────────────────────────
+      - name: Check test results against threshold
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-html-report
-          path: report.html
-          retention-days: 30
+        run: |
+          THRESHOLD=${{ inputs.failure-threshold || 0 }}
 
-      - name: Upload Allure results
+          # Count failures from pytest's exit code captured above
+          # pytest exit codes: 0=passed, 1=some failed, 2=interrupted, etc.
+          EXIT_CODE="${{ steps.pytest.outputs.exit_code }}"
+          echo "pytest exit code: $EXIT_CODE"
+          echo "Failure threshold: $THRESHOLD"
+
+          # Count actual failed tests from junit xml if available, else use exit code
+          if [ -f "test-results.xml" ]; then
+            FAILED_COUNT=$(grep -oP 'failures="\K[^"]+' test-results.xml | head -1 || echo "0")
+            FAILED_COUNT=${FAILED_COUNT:-0}
+          else
+            # Fall back to binary pass/fail based on exit code
+            FAILED_COUNT=$([ "$EXIT_CODE" = "0" ] && echo "0" || echo "1")
+          fi
+
+          echo "Failed tests: $FAILED_COUNT"
+          if [ "$FAILED_COUNT" -gt "$THRESHOLD" ]; then
+            echo "❌ Failed tests ($FAILED_COUNT) exceed threshold ($THRESHOLD)!"
+            exit 1
+          else
+            echo "✅ Failed tests ($FAILED_COUNT) within threshold ($THRESHOLD). Build marked as passed."
+          fi
+
+      # ── Restore Allure history from gh-pages ─────────────────────────────────
+      - name: Get Allure history
+        uses: actions/checkout@v4
         if: always()
-        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
-          name: allure-results
-          path: allure-results/
-          retention-days: 30
+          ref: gh-pages
+          path: gh-pages
 
-      # ── Generate & publish Allure report (GitHub Pages) ──────────────────────
+      - name: Debug – Check gh-pages structure
+        if: always()
+        run: |
+          echo "=== gh-pages structure ==="
+          ls -la gh-pages/ || echo "gh-pages directory not found"
+          ls -la gh-pages/allure/history/ || echo "gh-pages/allure/history directory not found"
+
+      - name: Restore Allure history
+        if: always()
+        run: |
+          mkdir -p allure-results/history
+          if [ -d "gh-pages/allure/history" ] && [ "$(ls -A gh-pages/allure/history 2>/dev/null)" ]; then
+            cp -r gh-pages/allure/history/* allure-results/history/
+            echo "=== History restored from gh-pages ==="
+          else
+            echo "=== No previous history found, starting fresh ==="
+          fi
+          ls -la allure-results/history/ || echo "No history files"
+
+      # ── Add Allure executor info ─────────────────────────────────────────────
+      - name: Add Allure Executor Information
+        if: always()
+        run: |
+          echo "{\"name\":\"GitHub Actions\",\"type\":\"github\",\"url\":\"${{ github.server_url }}/${{ github.repository }}\",\"buildOrder\":${{ github.run_number }},\"buildName\":\"#${{ github.run_number }}\",\"buildUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            > allure-results/executor.json
+
+      # ── Generate Allure report ───────────────────────────────────────────────
       - name: Install Allure CLI
         if: always()
         run: |
@@ -89,32 +170,71 @@ jobs:
         if: always()
         run: allure generate allure-results --clean -o allure-report
 
-      - name: Upload Allure HTML report
+      - name: Debug – Check generated report structure
         if: always()
+        run: |
+          echo "=== allure-report structure ==="
+          ls -la allure-report/
+          ls -la allure-report/history/ || echo "allure-report/history directory not found"
+
+      # ── Assemble public/ folder ──────────────────────────────────────────────
+      - name: Prepare Allure report for upload
+        if: always()
+        run: |
+          mkdir -p public
+
+          if [ -d "allure-report" ]; then
+            cp -r allure-report/* public/
+          else
+            echo "Warning: allure-report directory not found"
+          fi
+
+      # ── Upload artifacts ─────────────────────────────────────────────────────
+      - name: Upload test reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: allure-html-report
-          path: allure-report/
+          name: test-reports
+          path: public/
           retention-days: 30
 
-      - name: Publish Allure report to GitHub Pages
-        if: >
-          always() &&
-          (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      - name: Upload Allure results (raw JSON)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results
+          path: allure-results/
+          retention-days: 7
+
+  # ── Deploy to GitHub Pages ─────────────────────────────────────────────────
+  deploy:
+    needs: test
+    # Only deploy on push/dispatch to main or master; not on PRs
+    if: >
+      always() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    permissions:
+      contents: write # required to push to gh-pages branch
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: test-reports
+          path: ./public
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: allure-report
-          force_orphan: true # creates branch from scratch if it doesn't exist
-          enable_jekyll: false # serve Allure HTML as-is, no Jekyll processing
-
-      # ── Fail the build if tests failed ────────────────────────────────────────
-      - name: Assert tests passed
-        if: always()
-        run: |
-          exit_code="${{ steps.pytest.outputs.exit_code }}"
-          if [ "$exit_code" != "0" ]; then
-            echo "Tests failed (exit code $exit_code). Marking build as failed."
-            exit 1
-          fi
+          publish_dir: public
+          enable_jekyll: false
