@@ -22,20 +22,7 @@ class RegisterPage:
     def generate_unique_email(self):
         return f"test{int(time.time())}@test.tt"
 
-    async def register_user(
-        self, password: str = "123456", security_answer: str = "test"
-    ):
-        unique_email = self.generate_unique_email()
-        await self.email_field.fill(unique_email)
-        await self.password_field.fill(password)
-        await self.confirm_password_field.fill(password)
-        await self.security_question_dropdown.click()
-        await self.page.get_by_role("option", name="Mother's maiden name?").click()
-        await self.security_answer_field.fill(security_answer)
-        await self.register_button.click()
-        return unique_email
-
-    def register_user_sync(
+    def register_user(
         self, password: str = "123456", security_answer: str = "test"
     ):
         unique_email = self.generate_unique_email()

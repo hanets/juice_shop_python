@@ -1,4 +1,5 @@
 pytest-playwright
+allure-pytest
 numpy
 pandas
 pydantic

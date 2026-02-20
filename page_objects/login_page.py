@@ -13,10 +13,10 @@ class LoginPage:
         self.login_button = page.get_by_role("button", name="Login", exact=True)
         self.register_link = page.get_by_role("link", name="Not yet a customer?")
 
-    async def login(self, email: str, password: str):
-        await self.email_field.fill(email)
-        await self.password_field.fill(password)
-        await self.login_button.click()
+    def login(self, email: str, password: str):
+        self.email_field.fill(email)
+        self.password_field.fill(password)
+        self.login_button.click()
 
-    async def go_to_register(self):
-        await self.register_link.click()
+    def go_to_register(self):
+        self.register_link.click()

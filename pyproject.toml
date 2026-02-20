@@ -28,5 +28,5 @@ known_first_party = ["page_objects"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
+addopts = "-ra -q --html=report.html --alluredir=allure-results"
 testpaths = ["tests"]

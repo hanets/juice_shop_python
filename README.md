@@ -83,8 +83,3 @@ If you add features or refactor page objects, please:
 - `pytest-playwright`
 
 Install with `pip install -r requirements.txt`.
-
----
-
-If something in this README is unclear or you want a different format (shorter, more examples, or CI instructions), tell me what to add.
-```python

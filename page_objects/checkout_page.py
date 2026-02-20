@@ -18,10 +18,10 @@ class CheckoutPage:
             "button", name="Proceed to payment selection"
         )
 
-    def checkout_sync(self):
+    def checkout(self):
         self.__checkout_button.click()
 
-    def add_address_sync(
+    def add_address(
         self,
         country: str = "dsdsds",
         name: str = "ds",
@@ -43,33 +43,5 @@ class CheckoutPage:
         self.page.locator("div").filter(has_text="Add New").first.click()
         self.submit_address_button.click()
 
-    def proceed_to_payment_sync(self):
+    def proceed_to_payment(self):
         self.proceed_to_payment_button.click()
-
-    async def checkout(self):
-        await self.__checkout_button.click()
-
-    async def add_address(
-        self,
-        country: str = "dsdsds",
-        name: str = "ds",
-        mobile: str = "1212212121",
-        zip_code: str = "21212",
-        address: str = "dsdsdff",
-        city: str = "fdsfdsfds",
-        state: str = "dsds",
-    ):
-        await self.add_address_button.click()
-        await self.country_field.fill(country)
-        await self.name_field.fill(name)
-        await self.mobile_field.fill(mobile)
-        await self.zip_field.fill(zip_code)
-        await self.address_field.fill(address)
-        await self.city_field.fill(city)
-        await self.state_field.fill(state)
-        # Click the Add New button (assuming it's the first div with that text)
-        await self.page.locator("div").filter(has_text="Add New").first.click()
-        await self.submit_address_button.click()
-
-    async def proceed_to_payment(self):
-        await self.proceed_to_payment_button.click()
